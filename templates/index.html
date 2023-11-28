@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Web Chat</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"
+		integrity="sha512-zoJXRvW2gC8Z0Xo3lBbao5+AS3g6YWr5ztKqaicua11xHo+AvE1b0lT9ODgrHTmNUxeCw0Ry4BGRYZfXu70weg=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<body>
+	<header>
+		<nav class="nav-bar">
+			<div class="logo">
+				<a href="/">Web Chat</a>
+			</div>
+			<ul>
+				<li><a href="/sair">Home</a></li>
+				{% if username %}
+				<li><a href="/sair">{{ username }} | Sair</a></li>
+				{% endif %}
+			</ul>
+		</nav>
+	</header>
+	{% if not username %}
+	<div class="div-login-form">
+		<form action="/login" method="POST">
+			<h1 class="titulo">Conecte-se a nós</h1>
+			<input type="text" name="username" placeholder="Seu Username..." class="email" required />
+			<input type="password" name="password" placeholder="Sua Palavra-Passe..." class="senha" required />
+			<button class="btn">Iniciar sessão</button>
+		</form>
+	</div>
+	{% else %}
+	<div class="chat">
+		<h1>Meu Web Chat</h1>
+		<div class="mensagens"></div>
+		<form action="" class="form">
+			<input type="text" class="msg" />
+			<button class="btn-enviar">Enviar</button>
+		</form>
+	</div>
+	{% endif %}
+	<script>
+		const socket = io({ autoConnect: false });
+		let btnEnviar = document.querySelector(".btn-enviar");
+		let divMensagens = document.querySelector(".mensagens");
+
+		socket.connect("http://127.0.0.1:5000");
+
+		window.onload = () => {
+			socket.on("getMessages", (data) => {
+				
+				if (data["msg"].password == "{{ password }}") {
+					let span = document.createElement("span");
+					if (data["msg"].user_name == "{{ username }}") {
+						span.style.backgroundColor = "green";
+						span.innerText = `Por você: ${data["msg"].message}`;
+					} else {
+						span.innerText = `De ${data["msg"].user_name}: ${data["msg"].message}`;
+					}
+					divMensagens.appendChild(span);
+				}
+			});
+		};
+
+		btnEnviar.addEventListener("click", (e) => {
+			e.preventDefault();
+			let msg = document.querySelector(".msg");
+
+			socket.emit("sendMessage", {
+				msg: msg.value,
+				username: "{{ username }}",
+				password: "{{ password }}",
+			});
+			msg.value = "";
+		});
+
+		socket.on("chat", (data) => {			
+			let message = data.msg;
+
+			if (message.password == "{{ password }}") {	
+				let span = document.createElement("span");
+				if (message.username == "{{ username }}") {
+					span.style.backgroundColor = "green";
+					span.innerText = `Por você: ${message.msg}`;
+				} else {
+					span.innerText = `De ${message.username}: ${message.msg}`;
+				}
+				divMensagens.appendChild(span);
+			}
+
+		});
+	</script>
+</body>
+
+</html>
